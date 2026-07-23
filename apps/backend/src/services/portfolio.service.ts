@@ -45,10 +45,16 @@ export class PortfolioService {
     if (holdings.length === 0) return [];
 
     const identifiers = holdings.map(h => ({ ticker: h.ticker, exchange: h.exchange }));
-    const quotes = await marketDataService.getQuotes(identifiers);
+    
+    const [quotes, fundamentals] = await Promise.all([
+      marketDataService.getQuotes(identifiers),
+      marketDataService.getFundamentalsBatch(identifiers)
+    ]);
 
     return holdings.map((h) => {
       const quote = quotes.get(h.ticker);
+      const fundamental = fundamentals.get(h.ticker);
+      
       return {
         id: h.id,
         ticker: h.ticker,
@@ -61,6 +67,9 @@ export class PortfolioService {
         },
         currentMarketPrice: quote?.price ?? null,
         marketDataError: quote?.errorCategory ?? null,
+        peRatio: fundamental?.peRatio ?? null,
+        latestEarnings: fundamental?.latestEarnings ?? null,
+        fundamentalsError: fundamental?.errorCategory ?? null,
       };
     });
   }
