@@ -1,2 +1,27 @@
-# dynamic-portfolio-dashboard
-Dynamic Portfolio Dashboard built using Next.js, Node.js, TypeScript and Tailwind.
+# Dynamic Portfolio Dashboard
+
+## Overview
+
+## Architecture & Tech Stack
+
+## Prerequisites
+
+## Local Development Setup
+
+### 1. Environment Variables
+
+### 2. Database Setup (Docker/Neon)
+
+### 3. Running the Backend
+
+### 4. Running the Frontend
+
+## Project Structure
+
+## Database Migrations
+
+## Testing
+
+## Deployment
+
+## API Documentation
