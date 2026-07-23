@@ -40,16 +40,18 @@ model Sector {
 }
 
 model Holding {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  portfolioId    String    @map("portfolio_id") @db.Uuid
-  sectorId       String    @map("sector_id") @db.Uuid
-  ticker         String    @db.VarChar(20)
-  companyName    String    @map("company_name") @db.VarChar(255)
-  quantity       Decimal   @db.Decimal(15, 6)
-  purchasePrice  Decimal   @map("purchase_price") @db.Decimal(15, 2)
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  portfolioId      String    @map("portfolio_id") @db.Uuid
+  sectorId         String    @map("sector_id") @db.Uuid
+  ticker           String    @db.VarChar(20) // The actual value
+  exchange         String    @default("NSE") @db.VarChar(20)
+  identifierType   String    @default("TICKER") @map("identifier_type") @db.VarChar(20)
+  companyName      String    @map("company_name") @db.VarChar(255)
+  quantity         Decimal   @db.Decimal(15, 6)
+  purchasePrice    Decimal   @map("purchase_price") @db.Decimal(15, 2)
   
-  portfolio      Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
-  sector         Sector    @relation(fields: [sectorId], references: [id], onDelete: Restrict)
+  portfolio        Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  sector           Sector    @relation(fields: [sectorId], references: [id], onDelete: Restrict)
 
   @@unique([portfolioId, ticker])
   @@index([portfolioId])
