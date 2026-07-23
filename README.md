@@ -115,3 +115,37 @@ The Portfolio Persistence API allows strictly-typed access to persisted `users`,
 - `GET /api/v1/portfolios/:portfolioId/holdings` - Fetch holdings associated with a portfolio.
 
 For detailed architecture, serialization of `Decimal` types, and the Excel import specification, read the [Portfolio Module Documentation](docs/portfolio-module.md).
+
+## Phase 8: Data Import Pipeline
+The initial assignment portfolio is sourced from a binary Excel file. It is validated and imported transactionally into PostgreSQL.
+
+### 1. Validate Dataset
+Run a complete parsing, validation, and investment reconciliation dry-run without mutating the database:
+```bash
+npm run data:validate
+```
+
+### 2. Import Dataset
+Execute the idempotent database import pipeline:
+```bash
+npm run data:import
+# OR
+npm run db:seed
+```
+
+### 3. Verify Portfolio API
+Once imported, verify that the API serves the data directly from PostgreSQL:
+```bash
+# Start backend
+npm run start
+# Fetch all portfolios
+curl http://localhost:8080/api/v1/portfolios
+```
+For architectural specifics regarding how Excel rows are classified and how identifiers (BSE/NSE) are mapped, see [Data Import Documentation](docs/data-import.md).
+
+## Phase 9: Live Market Price
+The portfolio uses **Yahoo Finance** to dynamically retrieve the Current Market Price (CMP) of holdings at runtime. 
+- **Server-Side Integration:** All interactions with Yahoo Finance occur strictly server-side using the `yahoo-finance2` library to avoid exposing endpoints directly to the browser.
+- **Enrichment Only:** CMP is volatile data and is **never** persisted to the PostgreSQL database. Instead, the backend API merges historical ownership data from the database with live market quotes.
+- **Short-Lived Cache:** To minimize rate limits, avoid N+1 requests, and support a 15-second frontend polling interval, the backend uses an in-memory cache and performs batched fetching for uncached tickers.
+For complete details regarding provider abstraction, error handling, mapping NSE/BSE symbols, and timeout strategies, see the [Yahoo Finance Integration Documentation](docs/yahoo-finance-integration.md).
