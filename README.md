@@ -105,5 +105,13 @@ The application uses a global error handler middleware. Known operational errors
 ## Logging
 Structured JSON logging is implemented using **Pino** and **pino-http**. In development, logs are automatically formatted using `pino-pretty`. HTTP request logs automatically ignore high-frequency pings like the health endpoint to prevent noise.
 
-## Graceful Shutdown
-To ensure safe deployments on Render, the backend catches `SIGINT` and `SIGTERM`. It orchestrates a clean shutdown by halting new HTTP connections and explicitly invoking `prisma.$disconnect()` before terminating the process.
+## Current Implementation Status
+The core database schema, Express backend foundation, and Read-Only Portfolio API are implemented and tested. External live enrichment (Yahoo/Google Finance) and the Excel parser are intentionally omitted.
+
+## Portfolio Module API
+The Portfolio Persistence API allows strictly-typed access to persisted `users`, `portfolios`, `sectors`, and `holdings`.
+- `GET /api/v1/portfolios` - Fetch all portfolios and holdings.
+- `GET /api/v1/portfolios/:portfolioId` - Fetch a portfolio by its UUID.
+- `GET /api/v1/portfolios/:portfolioId/holdings` - Fetch holdings associated with a portfolio.
+
+For detailed architecture, serialization of `Decimal` types, and the Excel import specification, read the [Portfolio Module Documentation](docs/portfolio-module.md).
