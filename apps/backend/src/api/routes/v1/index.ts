@@ -1,7 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../../../db/prisma';
+import { portfolioRoutes } from './portfolio.routes';
 
 const router = Router();
+
+router.use('/portfolios', portfolioRoutes);
 
 router.get('/health', async (req: Request, res: Response) => {
   let dbStatus = 'disconnected';
