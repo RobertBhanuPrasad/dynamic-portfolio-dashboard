@@ -10,6 +10,8 @@ export interface HoldingResponse {
   quantity: number;
   purchasePrice: number;
   sector: SectorResponse;
+  currentMarketPrice?: number | null;
+  marketDataError?: string | null;
 }
 
 export interface PortfolioResponse {
