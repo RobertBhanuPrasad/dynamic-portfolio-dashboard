@@ -79,3 +79,31 @@ For production and staging, the app connects to **Neon PostgreSQL** (Serverless)
 2. Obtain the pooled connection string (with `?sslmode=require`).
 3. Set it as the `DATABASE_URL` environment variable in your Render dashboard.
 Neon's branching feature seamlessly integrates with Prisma migrations, allowing you to create a separate database branch for feature testing before pushing migrations to the main production branch.
+
+## Backend Architecture
+See the [Backend Foundation](docs/backend-foundation.md) document for a detailed explanation of Express middleware ordering, Zod configuration validation, and architectural principles.
+
+## Environment Variables
+The backend uses **Zod** for strict runtime environment variable validation. If any variable in `.env` is missing or invalid, the process will crash immediately upon startup.
+Required variables: `NODE_ENV`, `PORT`, `DATABASE_URL`, `FRONTEND_URL`, `LOG_LEVEL`.
+
+## Database Connection
+A single Prisma instance is centrally managed at `apps/backend/src/db/prisma.ts`. It securely connects to the PostgreSQL instance via the validated `DATABASE_URL`.
+
+## Running the Backend
+From the `apps/backend` directory:
+- **Development**: Run `npm run dev` (starts `tsx watch`).
+- **Production Build**: Run `npm run build` followed by `npm run start`.
+- **Type Checking**: Run `npm run typecheck` to strictly verify TypeScript integrity without emitting files.
+
+## Health Check
+The backend exposes `GET /api/v1/health` for deployment monitoring and local verification. It returns a structured JSON payload containing the service name, timestamp, and a lightweight database connectivity check.
+
+## Error Handling
+The application uses a global error handler middleware. Known operational errors utilize the `AppError` class (e.g., `NotFoundError`), returning structured JSON. Unexpected server errors return a standard `500` response without leaking stack traces in production. `express-async-errors` is used to prevent the need for manual `try/catch` wrapping on async controllers.
+
+## Logging
+Structured JSON logging is implemented using **Pino** and **pino-http**. In development, logs are automatically formatted using `pino-pretty`. HTTP request logs automatically ignore high-frequency pings like the health endpoint to prevent noise.
+
+## Graceful Shutdown
+To ensure safe deployments on Render, the backend catches `SIGINT` and `SIGTERM`. It orchestrates a clean shutdown by halting new HTTP connections and explicitly invoking `prisma.$disconnect()` before terminating the process.
