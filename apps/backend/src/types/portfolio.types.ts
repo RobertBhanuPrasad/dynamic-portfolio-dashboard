@@ -12,6 +12,9 @@ export interface HoldingResponse {
   sector: SectorResponse;
   currentMarketPrice?: number | null;
   marketDataError?: string | null;
+  peRatio?: number | null;
+  latestEarnings?: string | null;
+  fundamentalsError?: string | null;
 }
 
 export interface PortfolioResponse {
