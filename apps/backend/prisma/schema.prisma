@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String      @unique @db.VarChar(255)
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+  
+  portfolios Portfolio[]
+
+  @@map("users")
+}
+
+model Portfolio {
+  id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String      @map("user_id") @db.Uuid
+  name      String      @db.VarChar(100)
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+  
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  holdings  Holding[]
+
+  @@index([userId])
+  @@map("portfolios")
+}
+
+model Sector {
+  id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String      @unique @db.VarChar(100)
+  
+  holdings  Holding[]
+
+  @@map("sectors")
+}
+
+model Holding {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  portfolioId    String    @map("portfolio_id") @db.Uuid
+  sectorId       String    @map("sector_id") @db.Uuid
+  ticker         String    @db.VarChar(20)
+  companyName    String    @map("company_name") @db.VarChar(255)
+  quantity       Decimal   @db.Decimal(15, 6)
+  purchasePrice  Decimal   @map("purchase_price") @db.Decimal(15, 2)
+  
+  portfolio      Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  sector         Sector    @relation(fields: [sectorId], references: [id], onDelete: Restrict)
+
+  @@unique([portfolioId, ticker])
+  @@index([portfolioId])
+  @@index([sectorId])
+  @@map("holdings")
+}
