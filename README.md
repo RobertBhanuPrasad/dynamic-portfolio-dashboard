@@ -28,3 +28,25 @@ The core business domain isolates user-generated historical data (Transactions/P
 ## Deployment
 
 ## API Documentation
+
+## Domain Model
+See the Business Domain Diagram, entities, attributes, and data classifications located in the [Domain Model documentation](docs/domain-model.md).
+
+## Business Rules
+See the [Business Rules & Validation](docs/business-rules.md) document for a complete list of mathematical formulas (e.g., Present Value, Gain/Loss, Portfolio Percentage) and data validation constraints (e.g., Quantity, Purchase Price).
+
+## Request Lifecycle
+See the [Request Flow](docs/request-flow.md) document for a detailed breakdown of how a browser request traverses Next.js, Express, the Cache, PostgreSQL, Yahoo Finance, and Google Finance, including sequence diagrams.
+
+## Deployment Architecture
+See the [Deployment Architecture](docs/deployment-architecture.md) document for infrastructure mapping across Vercel, Render, and Neon, including architectural diagrams.
+
+## Database Design & ERD
+See the [Database Design](docs/database-design.md) document for a complete PostgreSQL schema, including normalization rules, column data types, constraints (indexes, foreign keys, checks), and the Mermaid Entity Relationship Diagram.
+
+## Database Migration Strategy
+We utilize Neon PostgreSQL's branching features alongside Prisma (or standard SQL migrations) to ensure zero-downtime schema evolution. See the [Database Design](docs/database-design.md) document for architectural principles regarding volatile data.
+
+## Seed Data Strategy
+See the Seed Data Strategy section in the [Database Design](docs/database-design.md) document for instructions on parsing, normalizing, and inserting the initial Excel portfolio spreadsheet into the relational schema.
+
