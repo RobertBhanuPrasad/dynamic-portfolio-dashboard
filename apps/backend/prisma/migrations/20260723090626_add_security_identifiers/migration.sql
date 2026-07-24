@@ -1,3 +1,7 @@
--- AlterTable
-ALTER TABLE "holdings" ADD COLUMN     "exchange" VARCHAR(20) NOT NULL DEFAULT 'NSE',
-ADD COLUMN     "identifier_type" VARCHAR(20) NOT NULL DEFAULT 'TICKER';
+-- Historical no-op migration.
+--
+-- This migration was originally created before the initial schema migration
+-- and attempted to alter the "holdings" table before that table existed.
+--
+-- The actual exchange and identifier_type columns are added by:
+-- 20260723130000_add_security_identifiers_after_init
