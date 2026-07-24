@@ -60,15 +60,21 @@ test('Portfolio Module Integration', async (t) => {
     const response = await request(app).get(`/api/v1/portfolios/${portfolio.id}`);
     assert.strictEqual(response.status, 200);
     assert.strictEqual(response.body.data.name, 'Test Portfolio');
-    assert.strictEqual(response.body.data.holdings.length, 1);
+    
+    // Check calculations structure
+    assert.strictEqual(response.body.data.sectors.length, 1);
     
     // Assert Decimal serialization works correctly (should be numbers, not objects)
-    const holding = response.body.data.holdings[0];
+    const holding = response.body.data.sectors[0].holdings[0];
     assert.strictEqual(holding.quantity, 100.5);
     assert.strictEqual(typeof holding.quantity, 'number');
     assert.strictEqual(holding.purchasePrice, 50.25);
     assert.strictEqual(typeof holding.purchasePrice, 'number');
     assert.strictEqual(holding.sector.name, 'Technology Test');
+    
+    // Verify pure calculations
+    assert.strictEqual(holding.investment, 5050.13); // 100.5 * 50.25 = 5050.125 rounded to 5050.13
+    assert.strictEqual(response.body.data.summary.totalInvestment, 5050.13);
   });
 
   await t.test('5. Cleanup temporary test data', async () => {

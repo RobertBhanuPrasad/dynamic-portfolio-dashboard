@@ -154,3 +154,12 @@ The portfolio dynamically retrieves external market data and fundamentals at run
 For complete architectural details, mapping logic, and timeout strategies, see:
 - [Yahoo Finance Integration](docs/yahoo-finance-integration.md)
 - [Google Finance Integration](docs/google-finance-integration.md)
+
+## Phase 11: Portfolio Calculation Engine
+The backend performs deterministic financial calculations for all holdings and sectors, merging database inputs with live market data. 
+- **Derived Metrics Not Persisted**: Metrics like `Investment`, `Present Value`, `Gain/Loss`, and `Portfolio %` are purely derived at runtime. They are intentionally excluded from the PostgreSQL schema.
+- **Formulas**: Matches exact Excel requirements (e.g. Portfolio Allocation % relies strictly on historical Investment value, not Present Value).
+- **Missing Market Data Safety**: If a stock lacks real-time market data (CMP), its `Present Value` gracefully defaults to `null` instead of $0, preserving portfolio valuation integrity. Sector and overall aggregations compute partial valuations using coverage metadata.
+- **Sector Aggregation**: Holdings are dynamically grouped by Database Sector IDs, supplying clean summary objects per sector directly to the frontend.
+
+For rounding strategies, formula definitions, and Excel reconciliation results, see the [Portfolio Calculation Engine Documentation](docs/portfolio-calculation-engine.md).
