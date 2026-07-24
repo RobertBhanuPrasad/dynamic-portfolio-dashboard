@@ -20,7 +20,14 @@ The core business domain isolates user-generated historical data (Transactions/P
 ### 3. Running the Backend
 
 ### 4. Running the Frontend
-
+The frontend is built with Next.js App Router and Tailwind CSS.
+```bash
+# From the root directory (or apps/frontend)
+npm run dev
+```
+By default, the frontend runs on `http://localhost:3000` and expects the backend to be running on `http://localhost:8080`.
+The `.env.example` in `apps/frontend` contains:
+`NEXT_PUBLIC_API_BASE_URL=http://localhost:8080`
 ## Project Structure
 
 ## Database Migrations
