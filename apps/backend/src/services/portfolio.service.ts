@@ -1,8 +1,9 @@
 import { portfolioRepository } from '../core/repositories/portfolio.repository';
 import { NotFoundError } from '../core/errors/AppError';
 import { decimalToNumber } from '../utils/serialization';
-import { PortfolioResponse, HoldingResponse } from '../types/portfolio.types';
+import { PortfolioResponse } from '../types/portfolio.types';
 import { marketDataService } from './market-data/market-data.service';
+import { PortfolioCalculator } from '../core/calculators/portfolio.calculator';
 
 export class PortfolioService {
   async getPortfolios(): Promise<PortfolioResponse[]> {
@@ -10,11 +11,13 @@ export class PortfolioService {
 
     const response = [];
     for (const portfolio of portfolios) {
+      const calculated = await this.enrichAndCalculate(portfolio.holdings);
       response.push({
         id: portfolio.id,
         name: portfolio.name,
         createdAt: portfolio.createdAt.toISOString(),
-        holdings: await this.enrichHoldingsWithMarketData(portfolio.holdings),
+        summary: calculated.summary,
+        sectors: calculated.sectors,
       });
     }
     
@@ -28,21 +31,45 @@ export class PortfolioService {
       throw new NotFoundError('Portfolio not found');
     }
 
+    const calculated = await this.enrichAndCalculate(portfolio.holdings);
+
     return {
       id: portfolio.id,
       name: portfolio.name,
       createdAt: portfolio.createdAt.toISOString(),
-      holdings: await this.enrichHoldingsWithMarketData(portfolio.holdings),
+      summary: calculated.summary,
+      sectors: calculated.sectors,
     };
   }
 
-  async getPortfolioHoldings(portfolioId: string): Promise<HoldingResponse[]> {
-    const holdings = await portfolioRepository.findHoldingsByPortfolioId(portfolioId);
-    return this.enrichHoldingsWithMarketData(holdings);
+  async getPortfolioHoldings(portfolioId: string): Promise<any[]> {
+    const portfolio = await portfolioRepository.findById(portfolioId);
+    if (!portfolio) {
+      throw new NotFoundError('Portfolio not found');
+    }
+    const calculated = await this.enrichAndCalculate(portfolio.holdings);
+    
+    // Flatten sectors to return a flat list of holding responses
+    const holdings = [];
+    for (const group of calculated.sectors) {
+      holdings.push(...group.holdings);
+    }
+    return holdings;
   }
 
-  private async enrichHoldingsWithMarketData(holdings: any[]): Promise<HoldingResponse[]> {
-    if (holdings.length === 0) return [];
+  private async enrichAndCalculate(holdings: any[]) {
+    if (holdings.length === 0) {
+      return {
+        summary: {
+          totalInvestment: 0,
+          totalPresentValue: 0,
+          totalGainLoss: 0,
+          totalGainLossPercentage: 0,
+          marketDataCoverage: { totalHoldings: 0, pricedHoldings: 0, unavailableHoldings: 0 },
+        },
+        sectors: []
+      };
+    }
 
     const identifiers = holdings.map(h => ({ ticker: h.ticker, exchange: h.exchange }));
     
@@ -51,7 +78,7 @@ export class PortfolioService {
       marketDataService.getFundamentalsBatch(identifiers)
     ]);
 
-    return holdings.map((h) => {
+    const rawEnrichedHoldings = holdings.map((h) => {
       const quote = quotes.get(h.ticker);
       const fundamental = fundamentals.get(h.ticker);
       
@@ -72,7 +99,9 @@ export class PortfolioService {
         fundamentalsError: fundamental?.errorCategory ?? null,
       };
     });
+
+    // Run the deterministic calculation engine
+    return PortfolioCalculator.processPortfolio(rawEnrichedHoldings);
   }
 }
-
 export const portfolioService = new PortfolioService();
