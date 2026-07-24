@@ -2,6 +2,9 @@
   "name": "backend",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "test": "tsx --test src/tests/portfolio.integration.test.ts",
     "data:validate": "tsx src/data-import/index.ts",

@@ -8,6 +8,8 @@ The core business domain isolates user-generated historical data (Transactions/P
 ## Architecture & Tech Stack
 
 ## Prerequisites
+- **Node.js >= 22** (Strict requirement for `yahoo-finance2` compatibility)
+- **PostgreSQL** (Docker or Neon)
 
 ## Local Development Setup
 
