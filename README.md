@@ -149,11 +149,12 @@ The portfolio dynamically retrieves external market data and fundamentals at run
 - **P/E Ratio & Latest Earnings:** Fetched exclusively from **Google Finance** via server-side DOM parsing (Phase 10).
 - **Server-Side Integration:** All interactions occur strictly server-side to avoid CORS issues and expose clean JSON to the frontend.
 - **Enrichment Only:** Market data is volatile and is **never** persisted to the PostgreSQL database. Instead, the backend API concurrently merges historical ownership data from the database with live market quotes and fundamentals.
-- **Independent Caching:** To minimize rate limits and support rapid frontend polling, Yahoo CMP is cached for 10 seconds, while Google fundamentals are cached for 1 hour. Both sources fail independently to guarantee partial-failure resilience.
+- **Independent Caching & Timeouts:** To minimize rate limits and support rapid frontend polling, Yahoo CMP is cached for 10 seconds, while Google fundamentals are cached for 1 hour. Both sources fail independently to guarantee partial-failure resilience. Provider requests are limited by bounded concurrency and strict timeouts (e.g., 5-10s). Transient provider failures are explicitly failure-cached with short TTLs (30-60 seconds) to prevent cascading latency spikes on subsequent API calls without locking in failures for the full hour.
 
 For complete architectural details, mapping logic, and timeout strategies, see:
 - [Yahoo Finance Integration](docs/yahoo-finance-integration.md)
 - [Google Finance Integration](docs/google-finance-integration.md)
+- [Market Data Reliability & Performance](docs/market-data-reliability.md)
 
 ## Phase 11: Portfolio Calculation Engine
 The backend performs deterministic financial calculations for all holdings and sectors, merging database inputs with live market data. 

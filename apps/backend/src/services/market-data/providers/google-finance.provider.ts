@@ -3,11 +3,14 @@ import * as cheerio from 'cheerio';
 import { FundamentalsProvider, FundamentalData } from '../market-data.types';
 import { GoogleFinanceMapper } from './google-finance.mapper';
 import { logger } from '../../../utils/logger';
+import { runWithConcurrency } from '../../../utils/concurrency';
 
 export class GoogleFinanceProvider implements FundamentalsProvider {
-  private fetchHtml(url: string, redirects = 0): Promise<string> {
+  private fetchHtml(url: string, timeoutMs: number, redirects = 0): Promise<string> {
     return new Promise((resolve, reject) => {
       if (redirects > 5) return reject(new Error('TOO_MANY_REDIRECTS'));
+      
+      let timer: NodeJS.Timeout;
       
       const req = https.get(url, {
         family: 4, // Avoid IPv6 hangs
@@ -15,29 +18,39 @@ export class GoogleFinanceProvider implements FundamentalsProvider {
           'User-Agent': 'curl/7.68.0', // Helps bypass some bot walls
           'Accept-Language': 'en-US,en;q=0.9',
           'Cookie': 'CONSENT=YES+cb.20230101-00-p0.en+FX+0'
-        },
-        timeout: 10000 // 10s connection timeout
+        }
       }, (res) => {
         if (res.statusCode && [301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
           const redirectUrl = new URL(res.headers.location, url).toString();
           req.destroy();
-          return resolve(this.fetchHtml(redirectUrl, redirects + 1));
+          clearTimeout(timer);
+          return resolve(this.fetchHtml(redirectUrl, timeoutMs, redirects + 1));
         }
 
         if (res.statusCode && res.statusCode >= 400) {
           res.destroy();
+          clearTimeout(timer);
           return reject(new Error(`HTTP_STATUS_${res.statusCode}`));
         }
         
         let data = '';
         res.on('data', chunk => data += chunk);
-        res.on('end', () => resolve(data));
+        res.on('end', () => {
+          clearTimeout(timer);
+          resolve(data);
+        });
       });
       
-      req.on('error', reject);
-      req.on('timeout', () => {
-        req.destroy();
+      timer = setTimeout(() => {
+        if (!req.destroyed) {
+          req.destroy();
+        }
         reject(new Error('TIMEOUT'));
+      }, timeoutMs);
+
+      req.on('error', (err) => {
+        clearTimeout(timer);
+        reject(err);
       });
     });
   }
@@ -45,13 +58,10 @@ export class GoogleFinanceProvider implements FundamentalsProvider {
   async getFundamentals(ticker: string, exchange: string): Promise<FundamentalData> {
     const providerSymbol = GoogleFinanceMapper.toProviderSymbol(ticker, exchange);
     const url = `https://www.google.com/finance/quote/${providerSymbol}?hl=en`;
+    const timeoutMs = parseInt(process.env.GOOGLE_TIMEOUT_MS || '10000', 10);
 
     try {
-      // Race the HTML fetch against an overall timeout
-      const html = await Promise.race([
-        this.fetchHtml(url),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 12000))
-      ]);
+      const html = await this.fetchHtml(url, timeoutMs);
 
       if (!html || html.length < 1000) {
         return this.createErrorData(ticker, providerSymbol, 'INVALID_RESPONSE');
@@ -109,16 +119,36 @@ export class GoogleFinanceProvider implements FundamentalsProvider {
   }
 
   async getFundamentalsBatch(identifiers: { ticker: string; exchange: string }[]): Promise<Map<string, FundamentalData>> {
-    // Process sequentially with a small delay to avoid Google rate limiting / blocking
     const result = new Map<string, FundamentalData>();
+    const concurrencyLimit = parseInt(process.env.GOOGLE_CONCURRENCY || '5', 10);
     
-    for (const id of identifiers) {
+    const start = Date.now();
+    let successes = 0;
+    let failures = 0;
+
+    await runWithConcurrency(identifiers, concurrencyLimit, async (id) => {
       const data = await this.getFundamentals(id.ticker, id.exchange);
       result.set(id.ticker, data);
       
-      // Small delay between requests
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
+      if (data.errorCategory) {
+        failures++;
+      } else {
+        successes++;
+      }
+
+      // Small delay between requests per worker to pace Google scraping
+      await new Promise(resolve => setTimeout(resolve, 200));
+    });
+
+    const durationMs = Date.now() - start;
+    logger.info({
+      provider: 'Google',
+      requested: identifiers.length,
+      successes,
+      failures,
+      durationMs,
+      concurrencyLimit
+    }, 'Google Finance fundamentals batch completed');
 
     return result;
   }

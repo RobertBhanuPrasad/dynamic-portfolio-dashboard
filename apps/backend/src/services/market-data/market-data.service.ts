@@ -14,10 +14,12 @@ export class MarketDataService {
   
   private quoteCache: Map<string, CacheEntry<MarketQuote>>;
   private quoteCacheTTLMs: number = 10 * 1000; // 10 seconds TTL
+  private failureCacheTTLMs: number = 30 * 1000; // 30 seconds for failures
   
   private fundamentalsCache: Map<string, CacheEntry<FundamentalData>>;
   // Fundamentals change daily/quarterly, so a 1-hour TTL is sufficient to reduce Google requests substantially
   private fundamentalsCacheTTLMs: number = 60 * 60 * 1000; 
+  private fundamentalsFailureTTLMs: number = 60 * 1000; // 1 minute for failures
   
   // Pending promises to handle request deduplication
   private pendingQuoteRequests: Map<string, Promise<MarketQuote>>;
@@ -55,9 +57,10 @@ export class MarketDataService {
     
     const requestPromise = this.quoteProvider.getQuote(ticker, exchange).then(quote => {
       // Cache the result
+      const ttl = quote.errorCategory ? this.failureCacheTTLMs : this.quoteCacheTTLMs;
       this.quoteCache.set(cacheKey, {
         data: quote,
-        expiresAt: Date.now() + this.quoteCacheTTLMs
+        expiresAt: Date.now() + ttl
       });
       this.pendingQuoteRequests.delete(cacheKey);
       return quote;
@@ -111,9 +114,10 @@ export class MarketDataService {
           const cacheKey = `${id.exchange}:${id.ticker}`;
           const quote = quotesMap.get(id.ticker);
           if (quote) {
+            const ttl = quote.errorCategory ? this.failureCacheTTLMs : this.quoteCacheTTLMs;
             this.quoteCache.set(cacheKey, {
               data: quote,
-              expiresAt: Date.now() + this.quoteCacheTTLMs
+              expiresAt: Date.now() + ttl
             });
             result.set(id.ticker, quote);
           }
@@ -177,9 +181,10 @@ export class MarketDataService {
           const cacheKey = `${id.exchange}:${id.ticker}`;
           const data = dataMap.get(id.ticker);
           if (data) {
+            const ttl = data.errorCategory ? this.fundamentalsFailureTTLMs : this.fundamentalsCacheTTLMs;
             this.fundamentalsCache.set(cacheKey, {
               data: data,
-              expiresAt: Date.now() + this.fundamentalsCacheTTLMs
+              expiresAt: Date.now() + ttl
             });
             result.set(id.ticker, data);
             batchResolveMap.get(id.ticker)?.(data);

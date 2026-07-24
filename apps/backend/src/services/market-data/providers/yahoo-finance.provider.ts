@@ -2,6 +2,7 @@ import YahooFinance from 'yahoo-finance2';
 import { MarketDataProvider, MarketQuote } from '../market-data.types';
 import { YahooSymbolMapper } from './yahoo-finance.mapper';
 import { logger } from '../../../utils/logger';
+import { runWithConcurrency, withTimeout } from '../../../utils/concurrency';
 
 export class YahooFinanceProvider implements MarketDataProvider {
   private yf: InstanceType<typeof YahooFinance>;
@@ -16,11 +17,8 @@ export class YahooFinanceProvider implements MarketDataProvider {
     const providerSymbol = YahooSymbolMapper.toProviderSymbol(ticker, exchange);
     
     try {
-      // Set a timeout for the request
-      const quote: any = await Promise.race([
-        this.yf.quote(providerSymbol),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 5000))
-      ]);
+      const timeoutMs = parseInt(process.env.YAHOO_TIMEOUT_MS || '5000', 10);
+      const quote: any = await withTimeout(this.yf.quote(providerSymbol), timeoutMs);
       
       if (!quote || typeof quote.regularMarketPrice !== 'number') {
         return this.createErrorQuote(ticker, providerSymbol, 'INVALID_RESPONSE');
@@ -44,59 +42,47 @@ export class YahooFinanceProvider implements MarketDataProvider {
     const result = new Map<string, MarketQuote>();
     if (identifiers.length === 0) return result;
 
-    const mapping = new Map<string, { ticker: string, exchange: string }>();
-    const providerSymbols = identifiers.map(id => {
-      const sym = YahooSymbolMapper.toProviderSymbol(id.ticker, id.exchange);
-      mapping.set(sym, id);
-      return sym;
-    });
+    const concurrencyLimit = parseInt(process.env.YAHOO_CONCURRENCY || '5', 10);
+    const timeoutMs = parseInt(process.env.YAHOO_TIMEOUT_MS || '5000', 10);
 
-    try {
-      const quotes: any = await Promise.race([
-        this.yf.quote(providerSymbols),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 10000))
-      ]);
+    const start = Date.now();
+    let successes = 0;
+    let failures = 0;
 
-      // yahooFinance.quote(array) returns an array
-      const quotesArray = Array.isArray(quotes) ? quotes : [quotes];
-
-      for (const quote of quotesArray) {
-        if (!quote.symbol) continue;
-        
-        const originalId = mapping.get(quote.symbol);
-        if (!originalId) continue;
-
-        if (typeof quote.regularMarketPrice === 'number') {
-          result.set(originalId.ticker, {
-            requestedIdentifier: originalId.ticker,
-            providerSymbol: quote.symbol,
+    await runWithConcurrency(identifiers, concurrencyLimit, async (id) => {
+      const providerSymbol = YahooSymbolMapper.toProviderSymbol(id.ticker, id.exchange);
+      try {
+        const quote: any = await withTimeout(this.yf.quote(providerSymbol), timeoutMs);
+        if (quote && typeof quote.regularMarketPrice === 'number') {
+          result.set(id.ticker, {
+            requestedIdentifier: id.ticker,
+            providerSymbol: quote.symbol || providerSymbol,
             price: quote.regularMarketPrice,
             currency: quote.currency,
             exchange: quote.exchange,
             marketState: quote.marketState,
             fetchedAt: new Date(),
           });
+          successes++;
         } else {
-          result.set(originalId.ticker, this.createErrorQuote(originalId.ticker, quote.symbol, 'INVALID_RESPONSE'));
+          result.set(id.ticker, this.createErrorQuote(id.ticker, providerSymbol, 'INVALID_RESPONSE'));
+          failures++;
         }
-      }
-
-      // Fill in those that were not found
-      for (const id of identifiers) {
-        if (!result.has(id.ticker)) {
-          const providerSymbol = YahooSymbolMapper.toProviderSymbol(id.ticker, id.exchange);
-          result.set(id.ticker, this.createErrorQuote(id.ticker, providerSymbol, 'SYMBOL_NOT_FOUND'));
-        }
-      }
-    } catch (error: any) {
-      logger.error({ err: error }, 'Yahoo Finance batch fetch failed, falling back to individual failures');
-      
-      // If batch fails, we mark all as failed. Or we could fallback to individual, but marking as failed is safer and respects rate limits.
-      for (const id of identifiers) {
-        const providerSymbol = YahooSymbolMapper.toProviderSymbol(id.ticker, id.exchange);
+      } catch (error: any) {
         result.set(id.ticker, this.handleError(error, id.ticker, providerSymbol));
+        failures++;
       }
-    }
+    });
+
+    const durationMs = Date.now() - start;
+    logger.info({
+      provider: 'Yahoo',
+      requested: identifiers.length,
+      successes,
+      failures,
+      durationMs,
+      concurrencyLimit
+    }, 'Yahoo Finance enrichment batch completed');
 
     return result;
   }
