@@ -1,0 +1,29 @@
+Holdings sorted by Present Value:
+Ticker: 541557 | Qty: 16 | Purchase: 4284 | CMP: 10603328500 | PV: 169653256000 | GainLoss: 169653187456 | Error: null
+Ticker: DMART | Qty: 27 | Purchase: 3777 | CMP: 4018.8 | PV: 108507.6 | GainLoss: 6528.6 | Error: null
+Ticker: ASTRAL | Qty: 56 | Purchase: 1517 | CMP: 1468.1 | PV: 82213.6 | GainLoss: -2738.4 | Error: null
+
+Failed to fetch prices for:
+Ticker: HDFCBANK | Error: TIMEOUT
+Ticker: BAJFINANCE | Error: TIMEOUT
+Ticker: 532174 | Error: TIMEOUT
+Ticker: 544252 | Error: TIMEOUT
+Ticker: 511577 | Error: TIMEOUT
+Ticker: AFFLE | Error: TIMEOUT
+Ticker: LTIM | Error: TIMEOUT
+Ticker: 542651 | Error: TIMEOUT
+Ticker: 544028 | Error: TIMEOUT
+Ticker: 544107 | Error: TIMEOUT
+Ticker: 532790 | Error: INVALID_RESPONSE
+Ticker: 532540 | Error: INVALID_RESPONSE
+Ticker: 500331 | Error: INVALID_RESPONSE
+Ticker: 500400 | Error: INVALID_RESPONSE
+Ticker: 542323 | Error: INVALID_RESPONSE
+Ticker: 532667 | Error: INVALID_RESPONSE
+Ticker: 542851 | Error: INVALID_RESPONSE
+Ticker: 543517 | Error: INVALID_RESPONSE
+Ticker: 542652 | Error: INVALID_RESPONSE
+Ticker: 543318 | Error: INVALID_RESPONSE
+Ticker: 506401 | Error: INVALID_RESPONSE
+Ticker: 533282 | Error: INVALID_RESPONSE
+Ticker: 540719 | Error: INVALID_RESPONSE

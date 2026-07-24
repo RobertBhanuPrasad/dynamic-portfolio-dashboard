@@ -19,7 +19,7 @@ export function PortfolioTable({ holdings }: PortfolioTableProps) {
             <th colSpan={2} className="px-4 py-2 border-b border-slate-200 bg-slate-100 text-center">Fundamentals</th>
           </tr>
           <tr>
-            <th className="px-4 py-3 font-semibold sticky left-0 bg-slate-50 z-20 shadow-[1px_0_0_0_#e2e8f0]">Company</th>
+            <th scope="col" className="px-4 py-3 font-semibold sticky left-0 bg-slate-50 z-20 shadow-[1px_0_0_0_#e2e8f0]">Company</th>
             <th className="px-4 py-3 font-semibold border-r border-slate-200">Ticker</th>
             <th className="px-4 py-3 font-semibold text-right">Qty</th>
             <th className="px-4 py-3 font-semibold text-right">Avg Price</th>
@@ -35,9 +35,9 @@ export function PortfolioTable({ holdings }: PortfolioTableProps) {
         <tbody>
           {holdings.map((holding) => (
             <tr key={holding.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-              <td className="px-4 py-3 font-medium text-slate-900 sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e2e8f0]">
+              <th scope="row" className="px-4 py-3 font-medium text-slate-900 sticky left-0 bg-white z-10 shadow-[1px_0_0_0_#e2e8f0]">
                 {holding.companyName}
-              </td>
+              </th>
               <td className="px-4 py-3 text-slate-500 border-r border-slate-200">{holding.ticker}</td>
               <td className="px-4 py-3 text-right">{holding.quantity}</td>
               <td className="px-4 py-3 text-right">{formatCurrency(holding.purchasePrice)}</td>

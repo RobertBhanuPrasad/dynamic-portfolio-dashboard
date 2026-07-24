@@ -7,14 +7,11 @@ import { prisma } from '../db/prisma';
 test('Portfolio Module Integration', async (t) => {
   let createdPortfolioId: string;
 
-  await t.test('1. Empty portfolio list', async () => {
-    // Clear any existing data safely
-    await prisma.holding.deleteMany({});
-    await prisma.portfolio.deleteMany({});
-    
+  await t.test('1. Get portfolio list', async () => {
+    // DO NOT wipe the database here as it runs against development DB
     const response = await request(app).get('/api/v1/portfolios');
     assert.strictEqual(response.status, 200);
-    assert.deepStrictEqual(response.body.data, []);
+    assert.ok(Array.isArray(response.body.data));
   });
 
   await t.test('2. Invalid portfolio UUID format', async () => {
@@ -78,10 +75,13 @@ test('Portfolio Module Integration', async (t) => {
   });
 
   await t.test('5. Cleanup temporary test data', async () => {
-    await prisma.holding.deleteMany({});
-    await prisma.portfolio.deleteMany({});
-    await prisma.sector.deleteMany({});
-    await prisma.user.deleteMany({});
+    // Only delete the specific records created by this test!
+    if (createdPortfolioId) {
+      await prisma.holding.deleteMany({ where: { portfolioId: createdPortfolioId } });
+      await prisma.portfolio.delete({ where: { id: createdPortfolioId } });
+    }
+    await prisma.sector.deleteMany({ where: { name: 'Technology Test' } });
+    await prisma.user.deleteMany({ where: { email: 'test@example.com' } });
     await prisma.$disconnect();
   });
 });

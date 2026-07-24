@@ -24,6 +24,21 @@ export class YahooFinanceProvider implements MarketDataProvider {
         return this.createErrorQuote(ticker, providerSymbol, 'INVALID_RESPONSE');
       }
 
+      if (quote.currency && quote.currency !== 'INR') {
+        logger.warn({ ticker, providerSymbol, expected: 'INR', actual: quote.currency }, 'CURRENCY_MISMATCH');
+        return this.createErrorQuote(ticker, providerSymbol, 'CURRENCY_MISMATCH');
+      }
+
+      if (quote.quoteType && quote.quoteType !== 'EQUITY') {
+        logger.warn({ ticker, providerSymbol, expected: 'EQUITY', actual: quote.quoteType }, 'INVALID_QUOTE_TYPE');
+        return this.createErrorQuote(ticker, providerSymbol, 'INVALID_QUOTE_TYPE');
+      }
+
+      if (quote.regularMarketPrice <= 0 || !Number.isFinite(quote.regularMarketPrice)) {
+        logger.warn({ ticker, providerSymbol, price: quote.regularMarketPrice }, 'INVALID_PRICE');
+        return this.createErrorQuote(ticker, providerSymbol, 'INVALID_PRICE');
+      }
+
       return {
         requestedIdentifier: ticker,
         providerSymbol,
@@ -53,21 +68,45 @@ export class YahooFinanceProvider implements MarketDataProvider {
       const providerSymbol = YahooSymbolMapper.toProviderSymbol(id.ticker, id.exchange);
       try {
         const quote: any = await withTimeout(this.yf.quote(providerSymbol), timeoutMs);
-        if (quote && typeof quote.regularMarketPrice === 'number') {
-          result.set(id.ticker, {
-            requestedIdentifier: id.ticker,
-            providerSymbol: quote.symbol || providerSymbol,
-            price: quote.regularMarketPrice,
-            currency: quote.currency,
-            exchange: quote.exchange,
-            marketState: quote.marketState,
-            fetchedAt: new Date(),
-          });
-          successes++;
-        } else {
+        
+        if (!quote || typeof quote.regularMarketPrice !== 'number') {
           result.set(id.ticker, this.createErrorQuote(id.ticker, providerSymbol, 'INVALID_RESPONSE'));
           failures++;
+          return;
         }
+
+        // Defensive Sanity Validation
+        if (quote.currency && quote.currency !== 'INR') {
+          logger.warn({ ticker: id.ticker, providerSymbol, expected: 'INR', actual: quote.currency }, 'CURRENCY_MISMATCH');
+          result.set(id.ticker, this.createErrorQuote(id.ticker, providerSymbol, 'CURRENCY_MISMATCH'));
+          failures++;
+          return;
+        }
+
+        if (quote.quoteType && quote.quoteType !== 'EQUITY') {
+          logger.warn({ ticker: id.ticker, providerSymbol, expected: 'EQUITY', actual: quote.quoteType }, 'INVALID_QUOTE_TYPE');
+          result.set(id.ticker, this.createErrorQuote(id.ticker, providerSymbol, 'INVALID_QUOTE_TYPE'));
+          failures++;
+          return;
+        }
+
+        if (quote.regularMarketPrice <= 0 || !Number.isFinite(quote.regularMarketPrice)) {
+          logger.warn({ ticker: id.ticker, providerSymbol, price: quote.regularMarketPrice }, 'INVALID_PRICE');
+          result.set(id.ticker, this.createErrorQuote(id.ticker, providerSymbol, 'INVALID_PRICE'));
+          failures++;
+          return;
+        }
+
+        result.set(id.ticker, {
+          requestedIdentifier: id.ticker,
+          providerSymbol: quote.symbol || providerSymbol,
+          price: quote.regularMarketPrice,
+          currency: quote.currency,
+          exchange: quote.exchange,
+          marketState: quote.marketState,
+          fetchedAt: new Date(),
+        });
+        successes++;
       } catch (error: any) {
         result.set(id.ticker, this.handleError(error, id.ticker, providerSymbol));
         failures++;
