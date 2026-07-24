@@ -24,7 +24,7 @@ export function RefreshStatus({ lastUpdated, isRefreshing, onRefresh }: RefreshS
       </div>
       
       {lastUpdated && (
-        <span className="text-slate-500">
+        <span className="text-slate-500" suppressHydrationWarning>
           Last updated: {lastUpdated.toLocaleTimeString()}
         </span>
       )}

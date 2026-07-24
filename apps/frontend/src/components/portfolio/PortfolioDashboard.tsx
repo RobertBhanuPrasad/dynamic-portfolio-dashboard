@@ -6,7 +6,15 @@ import { usePortfolio } from '../../hooks/usePortfolio';
 import { PortfolioSummaryCards } from './PortfolioSummaryCards';
 import { SectorSection } from './SectorSection';
 import { RefreshStatus } from './RefreshStatus';
-import { SectorAllocationChart } from './SectorAllocationChart';
+import dynamic from 'next/dynamic';
+
+const SectorAllocationChart = dynamic(
+  () => import('./SectorAllocationChart').then((mod) => mod.SectorAllocationChart),
+  { 
+    ssr: false,
+    loading: () => <div className="h-[300px] w-full animate-pulse bg-slate-100 rounded-lg"></div>
+  }
+);
 
 interface PortfolioDashboardProps {
   initialPortfolio?: Portfolio | null;
