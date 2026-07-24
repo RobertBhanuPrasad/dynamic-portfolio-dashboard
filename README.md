@@ -172,4 +172,11 @@ The backend performs deterministic financial calculations for all holdings and s
 - **Missing Market Data Safety**: If a stock lacks real-time market data (CMP), its `Present Value` gracefully defaults to `null` instead of $0, preserving portfolio valuation integrity. Sector and overall aggregations compute partial valuations using coverage metadata.
 - **Sector Aggregation**: Holdings are dynamically grouped by Database Sector IDs, supplying clean summary objects per sector directly to the frontend.
 
-For rounding strategies, formula definitions, and Excel reconciliation results, see the [Portfolio Calculation Engine Documentation](docs/portfolio-calculation-engine.md).
+## Phase 12 & 13: Frontend Foundation and Live Dashboard UI
+The Next.js frontend implements a responsive, financial-grade dashboard to visualize the portfolio API.
+- **Live 15-Second Refresh**: The dashboard polling architecture updates market data every 15 seconds safely in the background, preserving historical data visibility during network updates.
+- **Market Data Coverage**: Clearly displays coverage metrics (e.g. `20/26 prices available`), isolating missing real-time CMP values (`null`) safely as `—` without plummeting total calculated values to $0.
+- **Responsive Semantic Table**: The holdings table is optimized for both desktop and mobile viewing with sticky headers and semantic formatting.
+- **Architecture**: Employs a hybrid Next.js App Router design. Data is fetched server-side for rapid SEO-friendly initial load, then hydrated into a client component that manages the non-blocking polling intervals.
+
+For detailed architecture, component breakdown, and null-safety documentation, read the [Frontend Foundation](docs/frontend-foundation.md) and [Portfolio Dashboard UI](docs/portfolio-dashboard-ui.md) documentation.
