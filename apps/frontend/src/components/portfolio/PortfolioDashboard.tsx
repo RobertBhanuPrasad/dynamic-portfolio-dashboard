@@ -6,6 +6,7 @@ import { usePortfolio } from '../../hooks/usePortfolio';
 import { PortfolioSummaryCards } from './PortfolioSummaryCards';
 import { SectorSection } from './SectorSection';
 import { RefreshStatus } from './RefreshStatus';
+import { SectorAllocationChart } from './SectorAllocationChart';
 
 interface PortfolioDashboardProps {
   initialPortfolio?: Portfolio | null;
@@ -80,6 +81,27 @@ export function PortfolioDashboard({ initialPortfolio }: PortfolioDashboardProps
       )}
 
       <PortfolioSummaryCards summary={portfolio.summary} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Sector Allocation</h3>
+          <p className="text-xs text-slate-500 mb-4">Portfolio investment distribution by sector</p>
+          <SectorAllocationChart sectors={portfolio.sectors} />
+        </div>
+        
+        <div className="lg:col-span-2 bg-slate-900 p-6 rounded-lg shadow-sm border border-slate-800 text-white flex flex-col justify-center items-center text-center">
+          <h3 className="text-xl font-bold mb-2">Dynamic Portfolio</h3>
+          <p className="text-slate-400 max-w-md">
+            This dashboard dynamically merges your historical holdings from PostgreSQL with real-time quotes and fundamentals from Yahoo and Google Finance.
+          </p>
+          {portfolio.summary.marketDataCoverage.pricedHoldings < portfolio.summary.marketDataCoverage.totalHoldings && (
+             <div className="mt-6 px-4 py-2 bg-slate-800 rounded-md border border-slate-700 text-sm text-slate-300">
+               <span className="text-amber-400 font-semibold mr-2">Note:</span>
+               Some market prices are currently unavailable. Null values are safely preserved as — without impacting historical investment totals.
+             </div>
+          )}
+        </div>
+      </div>
 
       <div className="mt-8">
         <h3 className="text-xl font-bold text-slate-800 mb-4">Holdings by Sector</h3>
