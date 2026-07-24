@@ -184,3 +184,8 @@ For full UX decisions and field-gap analysis, read the [Dashboard UI/UX](docs/da
 
 ## Phase 15: Production Readiness & QA
 A full system integration audit was performed verifying 100% data reconciliation against the original Excel source. The database safely maintains exactly 26 holdings (₹15,43,060). Next.js polling handles simulated provider timeouts safely without data loss, and the pipeline correctly serializes calculations through Prisma into the REST API. The system is certified **READY FOR DEPLOYMENT** (Node.js >=22 required). Read the [Production Readiness Audit](docs/production-readiness-audit.md) for full metrics.
+
+## Phase 17: Production Deployment Strategy
+The repository is fully configured for cloud deployment across Vercel, Render, and Neon PostgreSQL. 
+Due to the requirement for manual cloud infrastructure provisioning and credential management, the actual deployment steps are strictly decoupled from automated repository operations. 
+See the detailed [Production Deployment Guide](docs/production-deployment.md) for instructions on environment variables, Prisma migration strategies (`directUrl` / `DATABASE_URL`), and the necessary manual actions.
